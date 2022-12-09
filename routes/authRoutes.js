@@ -6,6 +6,7 @@ const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
 const nodemailer = require("nodemailer");
+const bcrypt = require("bcrypt");
 
 // router.get('/home', (req, res) => {
 //     res.send("Hello World");
@@ -105,6 +106,99 @@ router.post("/signup", async (req, res) => {
       console.log(err);
       return res.status(422).json({ error: "User Not Registered" });
     }
+  }
+});
+
+//forgot password
+
+router.post("/verifyfp", (req, res) => {
+  console.log("sent by client", req.body);
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(422).json({ error: "Please add all the fields" });
+  }
+
+  User.findOne({ email: email }).then(async (savedUser) => {
+    if (savedUser) {
+      try {
+        let VerificationCode = Math.floor(100000 + Math.random() * 900000);
+        await mailer(email, VerificationCode);
+        console.log("Verification Code", VerificationCode);
+        res.send({
+          message: "Verification Code Sent to your Email",
+          VerificationCode,
+          email,
+        });
+      } catch (err) {
+        console.log(err);
+      }
+    } else {
+      return res.status(422).json({ error: "Invalid Credentials" });
+    }
+  });
+});
+
+//for reset password
+
+router.post("/resetpassword", (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(422).json({ error: "Please add all the fields" });
+  } else {
+    User.findOne({ email: email }).then(async (savedUser) => {
+      if (savedUser) {
+        savedUser.password = password;
+        savedUser
+          .save()
+          .then((user) => {
+            res.json({ message: "password changed successfully" });
+          })
+          .catch((err) => {
+            console.log(err);
+          });
+      } else {
+        return res.status(422).json({ error: "Invalid Credentials" });
+      }
+    });
+  }
+});
+
+router.post("/signin", (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(422).json({ error: "Please add all the fields" });
+  } else {
+    User.findOne({ email: email })
+      .then((savedUser) => {
+        if (!savedUser) {
+          return res.status(422).json({ error: "Invalid Credentials" });
+        } else {
+          console.log(savedUser);
+          bcrypt.compare(password, savedUser.password).then((doMatch) => {
+            if (doMatch) {
+              const token = jwt.sign(
+                { _id: savedUser._id },
+                process.env.JWT_SECRET
+              );
+              const { _id, username, email } = savedUser;
+              res.json({
+                message: "Successfully Signed In",
+                token,
+                user: { _id, username, email },
+              });
+            } else {
+              return res.status(422).json({ error: "Invalid Credentials" });
+            }
+          });
+          //res .status(200).json({ message: "Logged in successfully", savedUser });
+        }
+      })
+      .catch((err) => {
+        console.log(err);
+      });
   }
 });
 
