@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 const User = mongoose.model("User");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
+
 const nodemailer = require("nodemailer");
 
 // router.get('/home', (req, res) => {
@@ -26,7 +27,7 @@ async function mailer(recieveremail, code) {
   });
 
   let info = await transporter.sendMail({
-    from: "GeekChat",
+    from: "ChatApp",
     to: `${recieveremail}`,
     subject: "Email Verification",
     text: `Your Verification Code is ${code}`,
@@ -60,6 +61,7 @@ router.post("/verify", (req, res) => {
       });
     } catch (err) {
       console.log(err);
+      throw err;
     }
   });
 });
