@@ -153,7 +153,7 @@ router.post("/resetpassword", (req, res) => {
         savedUser
           .save()
           .then((user) => {
-            res.json({ message: "password changed successfully" });
+            res.json({ message: "Password Changed Successfully" });
           })
           .catch((err) => {
             console.log(err);
